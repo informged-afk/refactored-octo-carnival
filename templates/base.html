@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}MediaFlex{% endblock %}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial', sans-serif; }
+body { background-color: #141414; color: #ffffff; padding-bottom: 50px; }
+header {
+    background-color: #181818; display: flex; justify-content: space-between;
+    align-items: center; padding: 20px 4%; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5); flex-wrap: wrap; gap: 10px;
+}
+.logo { font-size: 24px; font-weight: bold; color: #e50914; text-decoration: none; }
+.auth-buttons { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.auth-buttons a {
+    text-decoration: none; padding: 10px 20px; border-radius: 4px;
+    font-weight: bold; transition: 0.2s;
+}
+.btn-login { color: #fff; border: 1px solid #fff; }
+.btn-login:hover { background-color: #fff; color: #141414; }
+.btn-register, .btn-admin { background-color: #e50914; color: #fff; }
+.btn-register:hover, .btn-admin:hover { background-color: #b80710; }
+.btn-logout { background-color: #333; color: #fff; }
+.btn-logout:hover { background-color: #555; }
+.btn-home {
+    color: #aaaaaa;
+    padding: 10px 16px;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: 0.2s;
+    font-weight: normal;
+}
+.btn-home:hover { color: #ffffff; background-color: #333333; }
+.user-info { display: flex; align-items: center; gap: 15px; color: #fff; }
+.user-avatar {
+    width: 40px; height: 40px; border-radius: 50%; background-color: #e50914;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 18px; color: #fff;
+}
+.user-name { font-size: 14px; font-weight: bold; }
+.user-role { font-size: 12px; color: #aaaaaa; }
+.flash-container { padding: 15px 4% 0; }
+.flash { padding: 12px 20px; border-radius: 6px; margin-bottom: 10px; font-weight: bold; }
+.flash-success { background-color: #2d9e5a; color: #fff; }
+.flash-error { background-color: #9e2d2d; color: #fff; }
+.container { padding: 40px 4%; max-width: 1400px; margin: 0 auto; }
+.section-title {
+    font-size: 24px; margin-bottom: 20px;
+    border-left: 4px solid #e50914; padding-left: 10px;
+}
+@media (max-width: 768px) {
+    header { flex-direction: column; gap: 10px; }
+    .auth-buttons, .user-info { flex-wrap: wrap; justify-content: center; }
+}
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+<header>
+    <a href="{{ url_for('index') }}" class="logo">MediaFlex</a>
+    <div class="auth-buttons">
+        {% if current_user and current_user.role == 'admin' and request.path != url_for('index') %}
+            <a href="{{ url_for('index') }}" class="btn-home"> На сайт</a>
+        {% endif %}
+
+        {% if current_user %}
+            <div class="user-info">
+                <div class="user-avatar">{{ current_user.username[0].upper() if current_user.username else '?' }}</div>
+                <div>
+                    <div class="user-name">{{ current_user.username }}</div>
+                    <div class="user-role">{{ ' Администратор' if current_user.role == 'admin' else ' Пользователь' }}</div>
+                </div>
+            </div>
+            {% if current_user.role == 'admin' and request.path != url_for('admin_panel') %}
+                <a href="{{ url_for('admin_panel') }}" class="btn-admin"> Админ</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" class="btn-logout"> Выйти</a>
+        {% else %}
+            <a href="{{ url_for('login') }}" class="btn-login">Вход</a>
+            <a href="{{ url_for('register') }}" class="btn-register">Регистрация</a>
+        {% endif %}
+    </div>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-container">
+            {% for category, msg in messages %}
+                <div class="flash flash-{{ category }}">{{ msg }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+</body>
+</html>

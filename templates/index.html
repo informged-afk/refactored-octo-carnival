@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}MediaFlex — Главная{% endblock %}
+
+{% block head %}
+<style>
+.hero {
+    background: linear-gradient(135deg, rgba(20,20,20,0.8), rgba(0,0,0,0.9)),
+                url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23141414"/%3E%3Ccircle cx="50" cy="50" r="20" fill="%23e50914" opacity="0.1"/%3E%3C/svg%3E');
+    height: 350px; display: flex; flex-direction: column; justify-content: center;
+    padding: 0 6%; border-radius: 12px; margin-bottom: 40px;
+    border: 1px solid #2a2a2a; position: relative; overflow: hidden;
+}
+.hero::after {
+    content: ''; position: absolute; top: -50%; right: -10%;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(229,9,20,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+}
+.hero h1 {
+    font-size: 48px; margin-bottom: 10px;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.9); position: relative; z-index: 1;
+}
+.hero p {
+    font-size: 20px; color: #cccccc; max-width: 600px;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.9); position: relative; z-index: 1;
+}
+.hero .hero-accent { color: #e50914; font-weight: bold; }
+.movie-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+.movie-link { text-decoration: none; color: inherit; }
+.movie-card {
+    background-color: #1f1f1f; border-radius: 6px; overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s; height: 100%;
+    display: flex; flex-direction: column;
+}
+.movie-card:hover { transform: scale(1.04); box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
+.movie-thumb {
+    width: 100%; height: 280px; background-color: #333;
+    background-size: cover; background-position: center;
+}
+.movie-info { padding: 15px; flex-grow: 1; }
+.movie-title {
+    font-size: 16px; font-weight: bold; margin-bottom: 5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.movie-meta { font-size: 14px; color: #aaaaaa; }
+.empty-message {
+    text-align: center; padding: 60px 20px; color: #666;
+    font-size: 18px; grid-column: 1 / -1;
+}
+@media (max-width: 768px) {
+    .hero h1 { font-size: 28px; }
+    .hero p { font-size: 16px; }
+    .hero { height: 250px; padding: 0 4%; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="hero">
+        <h1> <span class="hero-accent">MediaFlex</span> — мир кино у вас дома</h1>
+        <p>Смотрите любимые фильмы и сериалы в отличном качестве. Бесплатно и без регистрации!</p>
+    </div>
+
+    <h2 class="section-title"> Популярное сейчас</h2>
+    <div class="movie-grid">
+        {% if movies %}
+            {% for movie in movies %}
+                {% set poster = ('/' + movie.poster_file) if movie.poster_file
+                                else (movie.poster_url or 'https://via.placeholder.com/200x280/333333/666666?text=No+Poster') %}
+                <a href="{{ url_for('movie_detail', movie_id=movie.id) }}" class="movie-link">
+                    <div class="movie-card">
+                        <div class="movie-thumb" style="background-image: url('{{ poster }}');"></div>
+                        <div class="movie-info">
+                            <div class="movie-title">{{ movie.title }}</div>
+                            <div class="movie-meta">{{ movie.year }} • {{ movie.genre }}</div>
+                            {% if movie.rating %}
+                                <div class="movie-meta">⭐ {{ movie.rating }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+            {% endfor %}
+        {% else %}
+            <div class="empty-message"> Фильмов пока нет. Зайдите в админ-панель, чтобы добавить.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

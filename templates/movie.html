@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}MediaFlex — {{ movie.title }}{% endblock %}
+
+{% block head %}
+<style>
+.btn-back {
+    display: inline-flex; align-items: center; color: #aaaaaa;
+    text-decoration: none; font-size: 16px; margin-bottom: 30px; transition: 0.2s;
+}
+.btn-back:hover { color: #fff; }
+.btn-back span { margin-right: 8px; font-size: 20px; }
+.video-container {
+    position: relative; width: 100%; padding-bottom: 56.25%; height: 0;
+    overflow: hidden; border-radius: 8px; background: #000;
+    margin-bottom: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.video-container iframe, .video-container video {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;
+}
+.video-container video { background: #000; }
+
+/* Кнопка "включить звук" */
+.unmute-btn {
+    position: absolute; top: 15px; right: 15px; z-index: 10;
+    background: rgba(229, 9, 20, 0.9); color: #fff;
+    border: none; border-radius: 6px; padding: 10px 18px;
+    font-size: 15px; font-weight: bold; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+.unmute-btn:hover { background: #b80710; }
+.unmute-btn.hidden { display: none; }
+
+.movie-info { background-color: #1f1f1f; padding: 30px; border-radius: 8px; }
+.movie-info h1 { font-size: 32px; margin-bottom: 15px; }
+.movie-meta { margin-bottom: 20px; color: #cccccc; }
+.movie-meta span {
+    background-color: #333; padding: 5px 12px; border-radius: 4px;
+    margin-right: 10px; font-size: 14px; display: inline-block;
+}
+.movie-description { font-size: 18px; line-height: 1.6; color: #e5e5e5; }
+.no-video-message { color: #ff6b6b; padding: 20px; text-align: center; font-size: 18px; }
+@media (max-width: 768px) {
+    .movie-info { padding: 20px; }
+    .movie-info h1 { font-size: 24px; }
+    .movie-description { font-size: 16px; }
+    .unmute-btn { font-size: 13px; padding: 8px 12px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="{{ url_for('index') }}" class="btn-back"><span>&larr;</span> Вернуться на главную</a>
+
+    <div class="video-container">
+        {% if movie.video_file %}
+            {% set ext = movie.video_file.split('.')[-1]|lower %}
+            {% if ext == 'webm' %}{% set mime = 'video/webm' %}
+            {% elif ext == 'avi' %}{% set mime = 'video/x-msvideo' %}
+            {% elif ext == 'mkv' %}{% set mime = 'video/x-matroska' %}
+            {% elif ext == 'mov' %}{% set mime = 'video/quicktime' %}
+            {% else %}{% set mime = 'video/mp4' %}{% endif %}
+
+            <button type="button" id="unmuteBtn" class="unmute-btn">
+                🔊 Включить звук
+            </button>
+
+            <video id="moviePlayer" controls autoplay muted playsinline preload="auto">
+                <source src="/{{ movie.video_file }}" type="{{ mime }}">
+                Ваш браузер не поддерживает видео.
+            </video>
+
+            <script>
+            (function () {
+                var video = document.getElementById('moviePlayer');
+                var btn = document.getElementById('unmuteBtn');
+                if (!video) return;
+
+                // Пытаемся сразу запустить со звуком
+                video.muted = false;
+                video.volume = 1;
+
+                var playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(function () {
+                        // Успешно со звуком — кнопка не нужна
+                        if (btn) btn.classList.add('hidden');
+                    }).catch(function () {
+                        // Браузер запретил звук — играем в mute и показываем кнопку
+                        video.muted = true;
+                        video.play().catch(function () {});
+                        if (btn) btn.classList.remove('hidden');
+                    });
+                }
+
+                // Клик по кнопке — включаем звук
+                if (btn) {
+                    btn.addEventListener('click', function () {
+                        video.muted = false;
+                        video.volume = 1;
+                        video.play().catch(function () {});
+                        btn.classList.add('hidden');
+                    });
+                }
+
+                // Если пользователь сам включил звук через нативные контролы — прячем кнопку
+                video.addEventListener('volumechange', function () {
+                    if (!video.muted && video.volume > 0 && btn) {
+                        btn.classList.add('hidden');
+                    }
+                });
+            })();
+            </script>
+
+        {% elif embed_url %}
+            <iframe src="{{ embed_url }}"
+                    allow="clipboard-write; autoplay; encrypted-media; picture-in-picture"
+                    allowfullscreen></iframe>
+        {% else %}
+            <div class="no-video-message"> Видео для этого фильма пока не загружено</div>
+        {% endif %}
+    </div>
+
+    <div class="movie-info">
+        <h1>{{ movie.title }}</h1>
+        <div class="movie-meta">
+            <span>{{ movie.year }}</span>
+            {% if movie.rating %}<span>⭐ {{ movie.rating }}</span>{% endif %}
+            <span>{{ movie.genre }}</span>
+        </div>
+        {% if movie.description %}
+            <p class="movie-description">{{ movie.description }}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

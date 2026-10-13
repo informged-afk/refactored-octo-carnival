@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}MediaFlex — Админ-панель{% endblock %}
+
+{% block head %}
+<style>
+.stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px; margin-bottom: 40px;
+}
+.stat-card {
+    background-color: #1f1f1f; padding: 25px; border-radius: 8px;
+    text-align: center; border-left: 4px solid #e50914;
+}
+.stat-card .number { font-size: 36px; font-weight: bold; color: #e50914; }
+.stat-card .label { font-size: 14px; color: #aaaaaa; margin-top: 5px; }
+.tabs {
+    display: flex; gap: 5px; margin-bottom: 30px;
+    border-bottom: 1px solid #333; padding-bottom: 10px; flex-wrap: wrap;
+}
+.tab-btn {
+    color: #aaaaaa; padding: 10px 24px; text-decoration: none;
+    font-size: 16px; border-radius: 4px; transition: 0.2s;
+}
+.tab-btn:hover { color: #fff; background-color: #2a2a2a; }
+.tab-btn.active { color: #fff; background-color: #e50914; }
+.table-wrapper { overflow-x: auto; background-color: #1a1a1a; border-radius: 8px; padding: 5px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+table th {
+    background-color: #2a2a2a; text-align: left; padding: 12px 15px;
+    color: #e5e5e5; font-weight: bold; border-bottom: 2px solid #333;
+}
+table td { padding: 12px 15px; border-bottom: 1px solid #2a2a2a; color: #cccccc; vertical-align: middle; }
+table tr:hover td { background-color: #252525; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+.badge-admin { background-color: #e50914; color: #fff; }
+.badge-user { background-color: #333; color: #aaa; }
+.badge-static { background-color: #2d7a9e; color: #fff; }
+.badge-db { background-color: #2d9e5a; color: #fff; }
+.btn-action {
+    padding: 5px 12px; border: none; border-radius: 4px; cursor: pointer;
+    font-size: 12px; transition: 0.2s; margin: 2px; text-decoration: none;
+    display: inline-block; color: #fff;
+}
+.btn-edit { background-color: #2d7a9e; }
+.btn-edit:hover { background-color: #1f5a78; }
+.btn-delete { background-color: #9e2d2d; }
+.btn-delete:hover { background-color: #781f1f; }
+.btn-promote { background-color: #2d9e5a; }
+.btn-promote:hover { background-color: #1f7842; }
+.add-form {
+    background-color: #1a1a1a; padding: 25px; border-radius: 8px; margin-bottom: 30px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px; align-items: end;
+}
+.add-form .form-group { display: flex; flex-direction: column; gap: 5px; }
+.add-form .form-group.full-width { grid-column: 1 / -1; }
+.add-form label { font-size: 13px; color: #aaaaaa; }
+.add-form input, .add-form textarea, .add-form select {
+    padding: 10px 12px; background-color: #2a2a2a; border: 1px solid #3a3a3a;
+    border-radius: 4px; color: #fff; font-size: 14px;
+}
+.add-form input:focus, .add-form textarea:focus, .add-form select:focus {
+    border-color: #e50914; outline: none;
+}
+.add-form input[type="file"] { padding: 8px; color: #aaa; }
+.add-form textarea { resize: vertical; min-height: 60px; }
+.add-form .btn-submit {
+    padding: 10px 30px; background-color: #e50914; color: #fff; border: none;
+    border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;
+    transition: 0.2s; height: 42px;
+}
+.add-form .btn-submit:hover { background-color: #b80710; }
+.empty-state { text-align: center; padding: 40px; color: #666; font-size: 16px; }
+form.inline { display: inline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="stats-grid">
+        <div class="stat-card"><div class="number">{{ total_users }}</div><div class="label"> Всего пользователей</div></div>
+        <div class="stat-card"><div class="number">{{ total_movies }}</div><div class="label"> Всего фильмов</div></div>
+        <div class="stat-card"><div class="number">{{ total_admins }}</div><div class="label"> Администраторов</div></div>
+        <div class="stat-card"><div class="number">{{ recent_users }}</div><div class="label"> Новых за неделю</div></div>
+    </div>
+
+    <div class="tabs">
+        <a href="{{ url_for('admin_panel', tab='users') }}"
+           class="tab-btn {% if tab == 'users' %}active{% endif %}"> Пользователи</a>
+        <a href="{{ url_for('admin_panel', tab='movies') }}"
+           class="tab-btn {% if tab == 'movies' %}active{% endif %}"> Фильмы</a>
+        <a href="{{ url_for('admin_panel', tab='add-movie') }}"
+           class="tab-btn {% if tab == 'add-movie' %}active{% endif %}"> Добавить фильм</a>
+    </div>
+
+    {% if tab == 'users' %}
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>ID</th><th>Имя</th><th>Email</th><th>Роль</th><th>Дата</th><th>Действия</th></tr></thead>
+                <tbody>
+                    {% if users %}
+                        {% for u in users %}
+                        <tr>
+                            <td>{{ u.id }}</td>
+                            <td>{{ u.username }}</td>
+                            <td>{{ u.email }}</td>
+                            <td>
+                                {% if u.role == 'admin' %}
+                                    <span class="badge badge-admin"> Админ</span>
+                                {% else %}
+                                    <span class="badge badge-user"> Пользователь</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ u.created_at|date_fmt }}</td>
+                            <td>
+                                <a href="{{ url_for('admin_edit_user', user_id=u.id) }}" class="btn-action btn-edit">✏️</a>
+                                {% if u.role != 'admin' %}
+                                    <form class="inline" method="POST"
+                                          action="{{ url_for('admin_promote_user', user_id=u.id) }}">
+                                        <button type="submit" class="btn-action btn-promote">⬆️</button>
+                                    </form>
+                                {% endif %}
+                                {% if not (u.role == 'admin' and total_admins <= 1) %}
+                                    <form class="inline" method="POST"
+                                          action="{{ url_for('admin_delete_user', user_id=u.id) }}">
+                                        <button type="submit" class="btn-action btn-delete"></button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="6" class="empty-state"> Пользователей пока нет</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+    {% elif tab == 'movies' %}
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>ID</th><th>Постер</th><th>Название</th><th>Год</th>
+                        <th>Жанр</th><th>Рейтинг</th><th>Тип</th><th>Действия</th></tr>
+                </thead>
+                <tbody>
+                    {% if movies %}
+                        {% for m in movies %}
+                        {% set poster = ('/' + m.poster_file) if m.poster_file else m.poster_url %}
+                        <tr>
+                            <td>{{ m.id }}</td>
+                            <td>
+                                {% if poster %}
+                                    <img src="{{ poster }}" alt="Постер"
+                                         style="width:50px;height:70px;object-fit:cover;border-radius:4px;">
+                                {% else %}—{% endif %}
+                            </td>
+                            <td>{{ m.title }}</td>
+                            <td>{{ m.year }}</td>
+                            <td>{{ m.genre }}</td>
+                            <td>{{ '⭐ ' ~ m.rating if m.rating else '—' }}</td>
+                            <td>
+                                {% if m.is_static %}
+                                    <span class="badge badge-static"> Статический</span>
+                                {% else %}
+                                    <span class="badge badge-db"> БД</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin_edit_movie', movie_id=m.id) }}"
+                                   class="btn-action btn-edit"></a>
+                                {% if not m.is_static %}
+                                    <form class="inline" method="POST"
+                                          action="{{ url_for('admin_delete_movie', movie_id=m.id) }}">
+                                        <button type="submit" class="btn-action btn-delete"></button>
+                                    </form>
+                                {% else %}
+                                    <span style="color:#666;font-size:12px;">(только просмотр)</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="8" class="empty-state"> Фильмов пока нет</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+    {% elif tab == 'add-movie' %}
+        <form class="add-form" method="POST"
+              action="{{ url_for('admin_add_movie') }}" enctype="multipart/form-data">
+            <div class="form-group"><label>Название *</label>
+                <input type="text" name="title" placeholder="Например: Интерстеллар" required></div>
+            <div class="form-group"><label>Год *</label>
+                <input type="number" name="year" placeholder="2014" min="1900" max="2100" required></div>
+            <div class="form-group"><label>Жанр *</label>
+                <input type="text" name="genre" placeholder="Фантастика, Драма" required></div>
+            <div class="form-group"><label>Рейтинг</label>
+                <input type="number" name="rating" placeholder="8.6" step="0.1" min="0" max="10"></div>
+            <div class="form-group full-width"><label>Описание</label>
+                <textarea name="description" placeholder="Краткое описание фильма..."></textarea></div>
+            <div class="form-group"><label>Ссылка на видео (Rutube/YouTube)</label>
+                <input type="url" name="video_url" placeholder="https://rutube.ru/play/embed/..."></div>
+            <div class="form-group"><label>Ссылка на постер (URL)</label>
+                <input type="url" name="poster_url" placeholder="https://example.com/poster.jpg"></div>
+            <div class="form-group"><label>📁 Загрузить постер</label>
+                <input type="file" name="poster_file" accept="image/*"></div>
+            <div class="form-group"><label>📁 Загрузить видео</label>
+                <input type="file" name="video_file" accept="video/*"></div>
+            <div class="form-group full-width">
+                <button type="submit" class="btn-submit">➕ Добавить фильм</button>
+            </div>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

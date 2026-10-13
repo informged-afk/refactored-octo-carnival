@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}MediaFlex — {{ 'Просмотр' if is_static else 'Редактирование' }} фильма{% endblock %}
+
+{% block head %}
+<style>
+.edit-form {
+    background-color: #1f1f1f; padding: 30px; border-radius: 8px;
+    max-width: 600px; margin: 0 auto;
+}
+.edit-form h2 { color: #e50914; margin-bottom: 20px; }
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 5px; color: #aaa; font-size: 13px; }
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 10px; background-color: #2a2a2a;
+    border: 1px solid #3a3a3a; border-radius: 4px; color: #fff;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: #e50914; outline: none;
+}
+.btn-save {
+    padding: 12px 30px; background-color: #e50914; color: #fff;
+    border: none; border-radius: 4px; cursor: pointer; font-weight: bold;
+    width: 100%; font-size: 14px;
+}
+.btn-save:hover { background-color: #b80710; }
+.btn-cancel {
+    display: inline-block; margin-top: 10px; color: #aaa; text-decoration: none;
+    text-align: center; width: 100%; padding: 10px;
+}
+.btn-cancel:hover { color: #fff; }
+.warning {
+    background: #2a2a2a; padding: 12px; border-radius: 4px;
+    margin-bottom: 15px; border-left: 4px solid #e50914;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="edit-form">
+        <h2> {{ 'Просмотр статического фильма' if is_static else 'Редактировать фильм' }}</h2>
+
+        {% if is_static %}
+            <div class="warning">
+                 Это статический фильм, встроенный в код сервера.
+                При сохранении будет создана копия в БД, а оригинал исчезнет из списка.
+            </div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="form-group"><label>Название *</label>
+                <input type="text" name="title" value="{{ movie.title }}" required></div>
+            <div class="form-group"><label>Год *</label>
+                <input type="number" name="year" value="{{ movie.year }}" required></div>
+            <div class="form-group"><label>Жанр *</label>
+                <input type="text" name="genre" value="{{ movie.genre }}" required></div>
+            <div class="form-group"><label>Рейтинг</label>
+                <input type="number" name="rating" value="{{ movie.rating or '' }}"
+                       step="0.1" min="0" max="10"></div>
+            <div class="form-group"><label>Описание</label>
+                <textarea name="description" rows="4">{{ movie.description or '' }}</textarea></div>
+            <div class="form-group"><label>Ссылка на видео</label>
+                <input type="url" name="video_url" value="{{ movie.video_url or '' }}"></div>
+            <div class="form-group"><label>Ссылка на постер</label>
+                <input type="url" name="poster_url" value="{{ movie.poster_url or '' }}"></div>
+            <button type="submit" class="btn-save">💾 Сохранить</button>
+            <a href="{{ url_for('admin_panel', tab='movies') }}" class="btn-cancel">Отмена</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
